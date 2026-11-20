@@ -190,7 +190,7 @@ export function issueJson(store: Store, repo: Repo, issue: Issue): Record<string
 
 export function commentJson(store: Store, repo: Repo, issue: Issue, comment: Comment): Record<string, unknown> {
   return {
-    id: commentNodeId(store, repo, issue.number, comment.id),
+    id: comment.id,
     node_id: commentNodeId(store, repo, issue.number, comment.id),
     number: comment.id,
     body: comment.body,
@@ -241,7 +241,9 @@ export function commitJson(repo: Repo, sha: string): Record<string, unknown> {
   return {
     sha,
     commit: {
-      message: view.message,
+      // The stored message ends with git's newline; the API answers the
+      // message as the caller wrote it, without the trailing newline.
+      message: view.message.replace(/\n+$/, ''),
       author,
       committer,
     },

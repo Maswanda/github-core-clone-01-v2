@@ -670,6 +670,19 @@ export function parseGlobalId(
   } catch {
     return null;
   }
+  const kind = match[1] as string;
+  // A repository id encodes just 'owner/name' — there is no '#number' suffix.
+  // An id minted before the viewer login was learned carries an empty owner;
+  // the repository is still the viewer's, so it resolves by name alone.
+  if (kind === 'R') {
+    const slash = text.lastIndexOf('/');
+    if (slash < 0) return null;
+    const owner = text.slice(0, slash);
+    const name = text.slice(slash + 1);
+    const repo = owner === '' ? (store.repos.get(repoKey(name)) ?? null) : resolveRepo(store, owner, name);
+    if (!repo) return null;
+    return { kind: 'repo', repo, number: 0, commentId: 0 };
+  }
   const hash = text.indexOf('#');
   if (hash < 0) return null;
   const ownerName = text.slice(0, hash);
@@ -680,8 +693,6 @@ export function parseGlobalId(
   const repo = resolveRepo(store, owner, name);
   if (!repo) return null;
   const rest = text.slice(hash + 1);
-  const kind = match[1] as string;
-  if (kind === 'R') return { kind: 'repo', repo, number: 0, commentId: 0 };
   if (kind === 'I' || kind === 'PR') {
     const number = Number.parseInt(rest, 10);
     if (!Number.isInteger(number)) return null;
